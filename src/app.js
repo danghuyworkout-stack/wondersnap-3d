@@ -1,9 +1,9 @@
-// WonderSnap (browser): snap -> particle burst, fist -> form a model, open hand -> next wonder or EXPLODED VIEW
-// (hand openness = how far apart the parts fly), twist = rotate, ✌ = next, ☝ point = pick a part, pinch = pull it
-// out, two hands = zoom, snap = dissolve. Plus quiz, voice, cut-away, recording, beating heart / breathing lungs.
+// WonderSnap (browser): thumb+index pinch -> particle burst, fist -> form a model, open hand -> next wonder or
+// EXPLODED VIEW (hand openness = how far apart the parts fly), twist = rotate, ✌ = next, ☝ point = pick a part,
+// pinch = pull it out, two hands = zoom, thumb+middle pinch = dissolve. Plus quiz, voice, cut-away, recording.
 // MediaPipe (hands) + WebGL2 (GPU particles via transform feedback) + procedural models.
 import { CATALOG, isMachine, buildModel } from './models/catalog.js';
-import { Controller } from './logic/controller.js?v=20261023';
+import { Controller } from './logic/controller.js?v=20261023b';
 import { OPEN, FIST, PEACE, POINT, NONE } from './logic/gestures.js';
 import { IDLE, SPHERE, FORMED, DISSOLVE, SIM } from './logic/state.js';
 import { Renderer, perspective, mul4, translate4, rotY4, project } from './gl/renderer.js';
@@ -82,10 +82,10 @@ class Demo {
     const at = { cx: 0.2, cy: 0.55, s: 0.09 };
     const H = (pose) => () => synthHand({ ...at, pose });
     const add = (dur, hand, onStart) => this.segs.push({ dur, hand, onStart });
-    const snap = () => { add(0.13, H('snap_pressed')); add(0.3, H('snap_released')); };
+    const midPinch = () => { add(0.4, H('snap_pressed')); add(0.2, H('snap_released')); };
     const pinch = () => add(0.4, H('pinch'));
     const pick = (i) => () => { app.ctl.state.index = i; app.ctl.state.targetDirty = true; app.store.request(i); };
-    if (app.ctl.state.state !== IDLE) { snap(); add(1.5, () => null); }
+    if (app.ctl.state.state !== IDLE) { midPinch(); add(1.5, () => null); }
     for (const name of ['Eiffel Tower', 'Human Brain', 'Human Heart', 'Sports Car']) {
       const i = CATALOG.findIndex((d) => d.name === name);
       add(0.4, () => null, pick(i)); pinch(); add(1.4, H('open')); add(3.0, H('fist'));
@@ -96,7 +96,7 @@ class Demo {
         add(2.2, (u) => synthHand({ ...at, pose: 'partial', f: 1 - u }));
         add(1.2, H('fist'));
       } else add(1.5, H('fist'));
-      snap(); add(1.6, () => null);
+      midPinch(); add(1.6, () => null);
     }
   }
   tick(t) {
@@ -197,7 +197,7 @@ class App {
     if (formed) formT = t - Math.max(st.tState, this.uploadT);
     const vis = ctl.handVisible(t);
     const pointing = vis && (ctl.pose === POINT || ctl.rawPose === POINT);
-    const busyHand = pointing || ctl.pinch;                               // pointing / pinching must not move or explode the model
+    const busyHand = pointing || ctl.pinch || ctl.middlePinch;            // pointing / pinching must not move or explode the model
     const twoHands = vis && ctl.secondVisible(t) && formed;
 
     // 3. exploded view: hand openness when a hand is visible, else slider / keys / wheel / voice / quiz
@@ -584,7 +584,7 @@ class App {
   guideItems(machine) {
     return [
       ['pinch', '🤏', '<b>Pinch</b> thumb + index — summon particles'],
-      ['snap', '🫰', '<b>Snap</b> — dissolve'],
+      ['snap', '🤏', '<b>Thumb + middle pinch</b> — dissolve'],
       ['fist', '✊', machine ? '<b>Fist</b> — put it together' : '<b>Fist</b> — form the wonder'],
       ['open', '✋', machine ? '<b>Open slowly</b> — explode it, see inside' : '<b>Open hand</b> — morph to the next wonder'],
       ['twist', '🔄', '<b>Twist / raise hand</b> — rotate & tilt it'],
@@ -614,8 +614,8 @@ class App {
     }
     const pill = $('statePill');
     if (pill.dataset.state !== st.state) { pill.dataset.state = st.state; pill.textContent = st.state; }
-    const vis = ctl.handVisible(t), pose = vis ? (ctl.pinch ? 'pinch' : ctl.pose) : NONE;
-    const [emo, label] = pose === 'pinch' ? ['🤏', 'Pinch'] : POSE_UI[pose] || POSE_UI.other;
+    const vis = ctl.handVisible(t), pose = vis ? (ctl.pinch ? 'pinch' : ctl.middlePinch ? 'midpinch' : ctl.pose) : NONE;
+    const [emo, label] = pose === 'pinch' ? ['🤏', 'Pinch'] : pose === 'midpinch' ? ['🤏', 'Pinch (middle)'] : POSE_UI[pose] || POSE_UI.other;
     const pt = `${emo} ${label}${ctl.secondVisible(t) ? ' + 🖐' : ''}`;
     if ($('posePill').textContent !== pt) $('posePill').textContent = pt;
     const op = vis ? ctl.openness : 0;
@@ -769,7 +769,7 @@ class App {
       this.cam = this.cam || new HandCamera(this.video);
       await this.cam.start((s) => { msg.textContent = s; if (s) this.toast(s); });
       this.camOn = true; this.$('bCam').classList.add('on');
-      this.toast('📷 Camera on — pinch thumb + index to summon!');
+      this.toast('📷 Camera on — pinch thumb+index to summon, thumb+middle to dissolve!');
       return true;
     } catch (e) {
       console.error(e);

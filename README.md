@@ -31,7 +31,7 @@ to drive it with the on-screen buttons and keyboard.
 | Layer | What it does |
 |---|---|
 | **Hand tracking** | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) tracks up to two hands (21 landmarks each) from the webcam, fully on-device |
-| **Gesture recognition** | Custom classifiers turn landmarks into poses (fist, open, point, pinch, peace), a finger-snap detector, hand twist/tilt and two-hand zoom, fed through a debouncer and a state machine |
+| **Gesture recognition** | Custom classifiers turn landmarks into poses (fist, open, point, pinch, peace), thumb+index and thumb+middle pinch detectors, hand twist/tilt and two-hand zoom, fed through a debouncer and a state machine |
 | **Particle engine** | A hand-written WebGL2 renderer. Particle physics runs on the GPU with transform feedback: no Three.js, no game engine, no framework |
 | **Models** | 33 procedural models built from real measurements and sampled into point clouds, with named parts that can explode, glow and be pulled out |
 | **Server** | A zero-dependency Node.js static server (`server.mjs`) |
@@ -43,7 +43,7 @@ Nothing is sent anywhere: the video never leaves your machine.
 | Gesture | What it does |
 |---|---|
 | 🤏 **Pinch** (thumb + index) | Summon the particles when idle; on a formed model, pull the selected part out (pinch again to put it back) |
-| 🫰 **Snap** | Dissolve the current model |
+| 🤏 **Pinch** (thumb + middle) | Dissolve the current model |
 | ✊ **Fist** | Form the wonder, organ or machine |
 | ✋ **Open hand** | Wonders morph to the next one. Organs, engines and vehicles **explode**: how far you open your hand sets how far the parts fly apart, and closing it puts them back together |
 | 🔄 **Twist / raise your hand** | Turn and tilt the formed model |
@@ -99,7 +99,7 @@ Click a part to select it, drag to rotate.
 ## Gesture sensitivity
 
 The **Gesture sensitivity** control in the status panel defaults to **Standard**, which preserves the original gesture
-thresholds. **More forgiving** slightly relaxes static hand-pose recognition and openness. Snap and pinch detection are
+thresholds. **More forgiving** slightly relaxes static hand-pose recognition and openness. Pinch detection is
 unchanged, and the selection lasts only for the current page session.
 
 ## URL options
@@ -128,7 +128,7 @@ npm test
 | `features.spec.js` | Heartbeat and breathing, two-hand zoom, point-to-pick, pinch-to-pull, quiz, voice commands, cut-away, video recording |
 | `camera.spec.js` | Real `getUserMedia` to MediaPipe on Chromium's fake webcam, plus the camera-denied fallback |
 | `gpu.spec.js` | The GPU physics shader matches its CPU twin to ~1e-7 in every mode |
-| `logic.spec.js` | Pose classifiers, snap detector, debouncer, state machine, controller, voice-command parser |
+| `logic.spec.js` | Pose classifiers, pinch detectors, debouncer, state machine, controller, voice-command parser |
 | `models.spec.js` | Every model is deterministic, finite and fast, with real measurements and correctly exploding parts |
 
 ## Project structure

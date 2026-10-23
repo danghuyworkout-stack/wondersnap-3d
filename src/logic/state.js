@@ -1,11 +1,11 @@
-// App state machine. Pure logic: feed (stable pose, poseChanged, snapped, t); read sim parameters.
+// App state machine. Pure logic: feed (stable pose, poseChanged, action, t); read sim parameters.
 //
 //   IDLE --pinch (thumb + index)--> SPHERE (burst from centre)
 //   SPHERE --fist--> FORMED (particles fly into the current model)
 //   FORMED --open--> SPHERE + next model        (wonders only)
 //   FORMED + machine: hand openness = exploded view (open = apart, fist = assembled) — handled by the app
 //   SPHERE/FORMED --peace ✌--> SPHERE + next model (any model)
-//   SPHERE/FORMED --snap--> DISSOLVE --(1.2 s)--> IDLE
+//   SPHERE/FORMED --thumb+middle pinch--> DISSOLVE --(1.2 s)--> IDLE
 import { OPEN, FIST, PEACE } from './gestures.js';
 
 export const IDLE = 'idle', SPHERE = 'sphere', FORMED = 'formed', DISSOLVE = 'dissolve';
@@ -30,8 +30,8 @@ export class WonderState {
     this.targetDirty = true;
   }
 
-  update(pose, changed, snapped, t) {
-    if (snapped) {
+  update(pose, changed, action, t) {
+    if (action) {
       if (this.state === IDLE) { this.go(SPHERE, t); this.kick = true; this.fadeIn = true; this.emit('snap'); }
       else if (this.state === SPHERE || this.state === FORMED) { this.go(DISSOLVE, t); this.emit('dissolve'); }
     } else if (changed && pose === PEACE && (this.state === SPHERE || this.state === FORMED)) {

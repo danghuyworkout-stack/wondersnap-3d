@@ -1,12 +1,11 @@
 // Glue between hand landmarks and the state machine. Pure logic -> unit-testable with synthetic hands.
-import { classify, openness, pinched, PoseDebouncer, SnapDetector, GESTURE_PROFILES, STANDARD, NONE } from './gestures.js';
+import { classify, openness, pinched, middlePinched, PoseDebouncer, GESTURE_PROFILES, STANDARD, NONE } from './gestures.js?v=20261023b';
 import { WonderState, IDLE } from './state.js';
 
 export class Controller {
   constructor(n, isMachine = () => false, holdFrames = 4) {
     this.state = new WonderState(n, isMachine);
     this.debounce = new PoseDebouncer(holdFrames);
-    this.snap = new SnapDetector();
     this.gestureSensitivity = 'standard';
     this.gestureProfile = STANDARD;
     this.pose = NONE;
@@ -18,7 +17,8 @@ export class Controller {
     this.landmarks = null;
     this.aspect = 1;            // image width / height (landmark x and y are normalized separately)
     this.roll = 0;              // smoothed hand twist in the image plane, radians (0 = fingers up, + = clockwise)
-    this.pinch = false; this.pinchStart = false; this._pinchN = 0;   // debounced pinch + rising edge
+    this.pinch = false; this.pinchStart = false; this._pinchN = 0;   // debounced index pinch + rising edge
+    this.middlePinch = false; this._middlePinchN = 0;                 // debounced middle pinch (dissolve)
     this.second = null; this.secondT = -1e9; this.primaryWrist = null;   // optional second hand (two-hand zoom)
   }
 
@@ -52,13 +52,16 @@ export class Controller {
   onHand(lm, t) {
     const raw = classify(lm, this.gestureProfile);
     const [stable, changed] = this.debounce.update(raw);
-    const snapped = this.snap.update(lm, t);
     this.rawPose = raw;
     this._pinchN = pinched(lm) ? this._pinchN + 1 : 0;
     const was = this.pinch;
     this.pinch = this._pinchN >= 3;
     const pinchEdge = !was && this.pinch;
     this.pinchStart = this.pinchStart || pinchEdge;                  // latched until the app consumes it
+    this._middlePinchN = middlePinched(lm) ? this._middlePinchN + 1 : 0;
+    const wasMiddle = this.middlePinch;
+    this.middlePinch = this._middlePinchN >= 3;
+    const middlePinchEdge = !wasMiddle && this.middlePinch;
     this.pose = stable;
     this.landmarks = lm;
     if (lm) {
@@ -70,12 +73,13 @@ export class Controller {
       this.handY = (lm[0][1] + lm[9][1]) / 2;
       this.lastHandT = t;
     }
-    // Summon = thumb + index pinch while idle. Snap (thumb + middle) still dissolves a formed model,
-    // but no longer summons. Consume the pinch edge so the app does not also treat it as a part pull.
+    // Summon = thumb + index pinch while idle. Dissolve = thumb + middle pinch while a model is up.
+    // Consume the index-pinch edge so the app does not also treat it as a part pull.
     const idle = this.state.state === IDLE;
     const summon = idle && pinchEdge;
     if (summon) this.pinchStart = false;
-    const action = summon || (!idle && snapped);
+    const dissolve = !idle && middlePinchEdge;
+    const action = summon || dissolve;
     this.state.update(stable, changed, action, t);
     return action;
   }

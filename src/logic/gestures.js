@@ -53,6 +53,15 @@ export function pinched(lm) {
   return d(lm[THUMB_TIP], lm[8]) / handScale(lm) < 0.32 && classify(lm) !== FIST;
 }
 
+/** Middle pinch: thumb tip touching the middle tip while the index stays out of the way (not a fist). */
+export function middlePinched(lm) {
+  if (!lm) return false;
+  const s = handScale(lm);
+  return d(lm[THUMB_TIP], lm[MIDDLE_TIP]) / s < 0.32
+    && d(lm[THUMB_TIP], lm[8]) / s > 0.4          // index must not also be pinched: a closing fist is not a dissolve
+    && classify(lm) !== FIST;
+}
+
 export const middleExtended = (lm) => d(lm[MIDDLE_TIP], lm[WRIST]) > d(lm[10], lm[WRIST]) * 1.15;
 
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
