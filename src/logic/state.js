@@ -1,6 +1,6 @@
 // App state machine. Pure logic: feed (stable pose, poseChanged, snapped, t); read sim parameters.
 //
-//   IDLE --snap--> SPHERE (burst from centre)
+//   IDLE --pinch (thumb + index)--> SPHERE (burst from centre)
 //   SPHERE --fist--> FORMED (particles fly into the current model)
 //   FORMED --open--> SPHERE + next model        (wonders only)
 //   FORMED + machine: hand openness = exploded view (open = apart, fist = assembled) — handled by the app

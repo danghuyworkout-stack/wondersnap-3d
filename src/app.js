@@ -3,7 +3,7 @@
 // out, two hands = zoom, snap = dissolve. Plus quiz, voice, cut-away, recording, beating heart / breathing lungs.
 // MediaPipe (hands) + WebGL2 (GPU particles via transform feedback) + procedural models.
 import { CATALOG, isMachine, buildModel } from './models/catalog.js';
-import { Controller } from './logic/controller.js';
+import { Controller } from './logic/controller.js?v=20261023';
 import { OPEN, FIST, PEACE, POINT, NONE } from './logic/gestures.js';
 import { IDLE, SPHERE, FORMED, DISSOLVE, SIM } from './logic/state.js';
 import { Renderer, perspective, mul4, translate4, rotY4, project } from './gl/renderer.js';
@@ -83,11 +83,12 @@ class Demo {
     const H = (pose) => () => synthHand({ ...at, pose });
     const add = (dur, hand, onStart) => this.segs.push({ dur, hand, onStart });
     const snap = () => { add(0.13, H('snap_pressed')); add(0.3, H('snap_released')); };
+    const pinch = () => add(0.4, H('pinch'));
     const pick = (i) => () => { app.ctl.state.index = i; app.ctl.state.targetDirty = true; app.store.request(i); };
     if (app.ctl.state.state !== IDLE) { snap(); add(1.5, () => null); }
     for (const name of ['Eiffel Tower', 'Human Brain', 'Human Heart', 'Sports Car']) {
       const i = CATALOG.findIndex((d) => d.name === name);
-      add(0.4, () => null, pick(i)); snap(); add(1.4, H('open')); add(3.0, H('fist'));
+      add(0.4, () => null, pick(i)); pinch(); add(1.4, H('open')); add(3.0, H('fist'));
       if (isMachine(i)) {
         add(2.6, (u) => synthHand({ ...at, pose: 'partial', f: u }));
         add(1.4, H('open'));
@@ -582,7 +583,8 @@ class App {
 
   guideItems(machine) {
     return [
-      ['snap', '🫰', '<b>Snap</b> — summon particles / dissolve'],
+      ['pinch', '🤏', '<b>Pinch</b> thumb + index — summon particles'],
+      ['snap', '🫰', '<b>Snap</b> — dissolve'],
       ['fist', '✊', machine ? '<b>Fist</b> — put it together' : '<b>Fist</b> — form the wonder'],
       ['open', '✋', machine ? '<b>Open slowly</b> — explode it, see inside' : '<b>Open hand</b> — morph to the next wonder'],
       ['twist', '🔄', '<b>Twist / raise hand</b> — rotate & tilt it'],
@@ -620,7 +622,7 @@ class App {
     $('openBar').style.width = `${Math.round(op * 100)}%`; $('openPct').textContent = `${Math.round(op * 100)}%`;
     $('explodePct').textContent = `${Math.round(this.explode * 100)}%`;
     if (!this.sliderActive) $('explodeSlider').value = Math.round(this.explode * 100);
-    const hot = st.state === IDLE || st.state === DISSOLVE ? 'snap' : st.state === SPHERE ? 'fist' : 'open';
+    const hot = st.state === IDLE ? 'pinch' : st.state === SPHERE ? 'fist' : st.state === FORMED ? 'open' : 'snap';
     const gk = `${isM}|${hot}`;
     if (this.guideKey !== gk) {
       this.guideKey = gk;
@@ -654,7 +656,7 @@ class App {
     $('stats').innerHTML = `<b>${this.fps.toFixed(0)}</b> fps · <b>${(CFG.n / 1000).toFixed(0)}k</b> particles<br>${cam}${extra ? '<br>' + extra : ''}`;
     for (const e of st.events.splice(0)) {
       const name = CATALOG[st.index].name;
-      if (e === 'snap') this.toast('🫰 Snap! Particles summoned');
+      if (e === 'snap') this.toast('🤏 Pinch! Particles summoned');
       else if (e === 'form') this.toast(isM ? `✊ Assembling: ${name}` : `✊ Forming ${name}`);
       else if (e === 'next') this.toast(`✌ Next: ${name}`);
       else if (e === 'select') this.toast(`→ ${name}`);
@@ -767,7 +769,7 @@ class App {
       this.cam = this.cam || new HandCamera(this.video);
       await this.cam.start((s) => { msg.textContent = s; if (s) this.toast(s); });
       this.camOn = true; this.$('bCam').classList.add('on');
-      this.toast('📷 Camera on — snap your fingers!');
+      this.toast('📷 Camera on — pinch thumb + index to summon!');
       return true;
     } catch (e) {
       console.error(e);
@@ -814,7 +816,7 @@ function boot() {
   const start = document.getElementById('start');
   const hideStart = () => { start.hidden = true; };
   document.getElementById('bStartCam').onclick = async () => { if (await app.startCamera()) hideStart(); };
-  document.getElementById('bStartNoCam').onclick = () => { hideStart(); app.toast('Keyboard: Space = snap · F = fist · O = open · E = explode · D = demo · H = help'); };
+  document.getElementById('bStartNoCam').onclick = () => { hideStart(); app.toast('Keyboard: Space = summon/dissolve · F = fist · O = open · E = explode · D = demo · H = help'); };
   if (CFG.autostart === 'camera') { hideStart(); app.startCamera(); }
   else if (CFG.autostart === 'nocamera' || CFG.manual) hideStart();
 

@@ -1,6 +1,6 @@
 // Glue between hand landmarks and the state machine. Pure logic -> unit-testable with synthetic hands.
 import { classify, openness, pinched, PoseDebouncer, SnapDetector, GESTURE_PROFILES, STANDARD, NONE } from './gestures.js';
-import { WonderState } from './state.js';
+import { WonderState, IDLE } from './state.js';
 
 export class Controller {
   constructor(n, isMachine = () => false, holdFrames = 4) {
@@ -48,7 +48,7 @@ export class Controller {
     return Math.atan2((lm[9][0] - lm[0][0]) * aspect, -(lm[9][1] - lm[0][1]));
   }
 
-  /** Call once per camera frame (lm = 21 [x, y] pairs or null). Returns true if a snap fired. */
+  /** Call once per camera frame (lm = 21 [x, y] pairs or null). Returns true if a summon or dissolve fired. */
   onHand(lm, t) {
     const raw = classify(lm, this.gestureProfile);
     const [stable, changed] = this.debounce.update(raw);
@@ -57,7 +57,8 @@ export class Controller {
     this._pinchN = pinched(lm) ? this._pinchN + 1 : 0;
     const was = this.pinch;
     this.pinch = this._pinchN >= 3;
-    this.pinchStart = this.pinchStart || (!was && this.pinch);        // latched until the app consumes it
+    const pinchEdge = !was && this.pinch;
+    this.pinchStart = this.pinchStart || pinchEdge;                  // latched until the app consumes it
     this.pose = stable;
     this.landmarks = lm;
     if (lm) {
@@ -69,8 +70,14 @@ export class Controller {
       this.handY = (lm[0][1] + lm[9][1]) / 2;
       this.lastHandT = t;
     }
-    this.state.update(stable, changed, snapped, t);
-    return snapped;
+    // Summon = thumb + index pinch while idle. Snap (thumb + middle) still dissolves a formed model,
+    // but no longer summons. Consume the pinch edge so the app does not also treat it as a part pull.
+    const idle = this.state.state === IDLE;
+    const summon = idle && pinchEdge;
+    if (summon) this.pinchStart = false;
+    const action = summon || (!idle && snapped);
+    this.state.update(stable, changed, action, t);
+    return action;
   }
 
   handVisible(t) { return t - this.lastHandT < 0.35; }

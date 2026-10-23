@@ -2,7 +2,7 @@
 
 **Gesture-controlled 3D models made of glowing light particles, running entirely in your browser.**
 
-Snap your fingers in front of your webcam and up to 250,000 GPU particles swirl into existence. Make a fist and they
+Pinch your thumb and index finger in front of your webcam and up to 250,000 GPU particles swirl into existence. Make a fist and they
 form the Eiffel Tower, a beating heart or a V8 engine. Open your hand and the model morphs into the next one, or
 explodes into a labelled diagram of every part. No mouse, no controller, no install beyond Node.js.
 
@@ -42,12 +42,12 @@ Nothing is sent anywhere: the video never leaves your machine.
 
 | Gesture | What it does |
 |---|---|
-| 🫰 **Snap** | Summon the particles, or dissolve the current model |
+| 🤏 **Pinch** (thumb + index) | Summon the particles when idle; on a formed model, pull the selected part out (pinch again to put it back) |
+| 🫰 **Snap** | Dissolve the current model |
 | ✊ **Fist** | Form the wonder, organ or machine |
 | ✋ **Open hand** | Wonders morph to the next one. Organs, engines and vehicles **explode**: how far you open your hand sets how far the parts fly apart, and closing it puts them back together |
 | 🔄 **Twist / raise your hand** | Turn and tilt the formed model |
 | ☝️ **Point** | Hold your finger on a part to select it. It glows, and a card explains what it does |
-| 🤏 **Pinch** | Pull the selected part out toward you; pinch again to put it back |
 | 🙌 **Two hands** | Move them apart or together to zoom |
 | ✌️ **Peace** | Jump to the next model |
 
@@ -55,7 +55,7 @@ Nothing is sent anywhere: the video never leaves your machine.
 
 | Key | Action |
 |---|---|
-| `Space` | Snap |
+| `Space` | Summon / dissolve |
 | `F` / `O` / `V` | Fist / open hand / peace sign |
 | `←` `→` | Previous / next model |
 | `E`, `↑` `↓`, mouse wheel | Explode amount |
