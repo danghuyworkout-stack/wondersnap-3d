@@ -5,6 +5,7 @@
 //   FORMED --open--> SPHERE + next model        (wonders only)
 //   FORMED + machine: hand openness = exploded view (open = apart, fist = assembled) — handled by the app
 //   SPHERE/FORMED --peace ✌--> SPHERE + next model (any model)
+//   SPHERE/FORMED --clap 👏--> SPHERE + next model (any model)
 //   SPHERE/FORMED --thumb+middle pinch--> DISSOLVE --(1.2 s)--> IDLE
 import { OPEN, FIST, PEACE } from './gestures.js';
 
@@ -30,10 +31,12 @@ export class WonderState {
     this.targetDirty = true;
   }
 
-  update(pose, changed, action, t) {
+  update(pose, changed, action, t, clapped = false) {
     if (action) {
       if (this.state === IDLE) { this.go(SPHERE, t); this.kick = true; this.fadeIn = true; this.emit('snap'); }
       else if (this.state === SPHERE || this.state === FORMED) { this.go(DISSOLVE, t); this.emit('dissolve'); }
+    } else if (clapped && (this.state === SPHERE || this.state === FORMED)) {
+      this.advance(1); this.go(SPHERE, t); this.fadeIn = false; this.emit('clap');
     } else if (changed && pose === PEACE && (this.state === SPHERE || this.state === FORMED)) {
       this.advance(1); this.go(SPHERE, t); this.fadeIn = false; this.emit('next');
     } else if (this.state === SPHERE && changed && pose === FIST) {

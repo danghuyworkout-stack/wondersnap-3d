@@ -126,3 +126,37 @@ export class SnapDetector {
     return false;
   }
 }
+
+/** Two-hand clap: the hands must be apart, come together fast, then separate again. Detects one edge per clap. */
+export class ClapDetector {
+  constructor({ close = 2.2, open = 3.2, maxOpenS = 0.5, cooldownS = 1.2, dropoutS = 0.15 } = {}) {
+    Object.assign(this, { close, open, maxOpenS, cooldownS, dropoutS });
+    this.wasOpen = false; this.closedAt = null; this.hadDropout = false; this.lastFire = -1e9;
+  }
+  update(a, b, t, aspect = 1) {
+    if (!a || !b) {
+      if (this.closedAt !== null) {
+        if (t - this.closedAt > this.maxOpenS + this.dropoutS) this.closedAt = null;
+        else this.hadDropout = true;
+      }
+      return false;
+    }
+    const scale = Math.max((handScale(a) + handScale(b)) / 2, 1e-6);
+    const dist = Math.hypot((a[9][0] - b[9][0]) * aspect, a[9][1] - b[9][1]) / scale;
+    if (dist > this.open) {
+      this.wasOpen = true;
+      if (this.closedAt !== null) {
+        const window = this.maxOpenS + (this.hadDropout ? this.dropoutS : 0);
+        const fire = t - this.closedAt <= window && t - this.lastFire >= this.cooldownS;
+        this.closedAt = null; this.hadDropout = false;
+        if (fire) { this.lastFire = t; return true; }
+      }
+    } else if (dist < this.close && this.wasOpen) {
+      this.closedAt = t; this.wasOpen = false; this.hadDropout = false;
+    }
+    if (this.closedAt !== null && t - this.closedAt > this.maxOpenS + (this.hadDropout ? this.dropoutS : 0)) {
+      this.closedAt = null; this.hadDropout = false;
+    }
+    return false;
+  }
+}

@@ -3,9 +3,9 @@
 // pinch = pull it out, two hands = zoom, thumb+middle pinch = dissolve. Plus quiz, voice, cut-away, recording.
 // MediaPipe (hands) + WebGL2 (GPU particles via transform feedback) + procedural models.
 import { CATALOG, isMachine, buildModel } from './models/catalog.js';
-import { Controller } from './logic/controller.js?v=20261023b';
+import { Controller } from './logic/controller.js?v=20261023c';
 import { OPEN, FIST, PEACE, POINT, NONE } from './logic/gestures.js';
-import { IDLE, SPHERE, FORMED, DISSOLVE, SIM } from './logic/state.js';
+import { IDLE, SPHERE, FORMED, DISSOLVE, SIM } from './logic/state.js?v=20261023c';
 import { Renderer, perspective, mul4, translate4, rotY4, project } from './gl/renderer.js';
 import { HandCamera } from './hands.js';
 import { hand as synthHand } from './logic/synth.js';
@@ -587,6 +587,7 @@ class App {
       ['snap', '🤏', '<b>Thumb + middle pinch</b> — dissolve'],
       ['fist', '✊', machine ? '<b>Fist</b> — put it together' : '<b>Fist</b> — form the wonder'],
       ['open', '✋', machine ? '<b>Open slowly</b> — explode it, see inside' : '<b>Open hand</b> — morph to the next wonder'],
+      ['clap', '👏', '<b>Clap</b> — next model'],
       ['twist', '🔄', '<b>Twist / raise hand</b> — rotate & tilt it'],
       ...(machine ? [['point', '☝', '<b>Point</b> at a part to learn it · <b>pinch</b> 🤏 pulls it out']] : []),
       ['zoom', '🙌', '<b>Two hands</b> apart / together — zoom'],
@@ -626,7 +627,7 @@ class App {
     const gk = `${isM}|${hot}`;
     if (this.guideKey !== gk) {
       this.guideKey = gk;
-      $('guide').innerHTML = this.guideItems(isM).map(([k, e, txt]) => `<li class="${k === hot || (['peace', 'twist', 'point'].includes(k) && st.state === FORMED) ? 'hot' : ''}"><span class="e">${e}</span><span>${txt}</span></li>`).join('');
+      $('guide').innerHTML = this.guideItems(isM).map(([k, e, txt]) => `<li class="${k === hot || (['peace', 'twist', 'point', 'clap'].includes(k) && st.state === FORMED) ? 'hot' : ''}"><span class="e">${e}</span><span>${txt}</span></li>`).join('');
     }
     $('bigTitle').classList.toggle('show', st.state === FORMED && formT > 0.8 && this.uploaded === st.index && this.explode < 0.15 && this.sel < 0 && !this.quiz);
     // part card
@@ -659,6 +660,7 @@ class App {
       if (e === 'snap') this.toast('🤏 Pinch! Particles summoned');
       else if (e === 'form') this.toast(isM ? `✊ Assembling: ${name}` : `✊ Forming ${name}`);
       else if (e === 'next') this.toast(`✌ Next: ${name}`);
+      else if (e === 'clap') this.toast(`👏 Clap! Next: ${name}`);
       else if (e === 'select') this.toast(`→ ${name}`);
       else if (e === 'dissolve') this.toast('💥 Dissolved');
     }

@@ -1,11 +1,12 @@
 // Glue between hand landmarks and the state machine. Pure logic -> unit-testable with synthetic hands.
-import { classify, openness, pinched, middlePinched, PoseDebouncer, GESTURE_PROFILES, STANDARD, NONE } from './gestures.js?v=20261023b';
-import { WonderState, IDLE } from './state.js';
+import { classify, openness, pinched, middlePinched, PoseDebouncer, ClapDetector, GESTURE_PROFILES, STANDARD, NONE } from './gestures.js?v=20261023c';
+import { WonderState, IDLE, SPHERE, FORMED } from './state.js?v=20261023c';
 
 export class Controller {
   constructor(n, isMachine = () => false, holdFrames = 4) {
     this.state = new WonderState(n, isMachine);
     this.debounce = new PoseDebouncer(holdFrames);
+    this.clap = new ClapDetector();
     this.gestureSensitivity = 'standard';
     this.gestureProfile = STANDARD;
     this.pose = NONE;
@@ -39,7 +40,8 @@ export class Controller {
     if (primary) this.primaryWrist = primary[0];
     this.second = second;
     if (second) this.secondT = t;
-    return this.onHand(primary, t);
+    const clapped = this.clap.update(primary, second, t, this.aspect);
+    return this.onHand(primary, t, clapped);
   }
   secondVisible(t) { return !!this.second && t - this.secondT < 0.35; }
 
@@ -48,8 +50,8 @@ export class Controller {
     return Math.atan2((lm[9][0] - lm[0][0]) * aspect, -(lm[9][1] - lm[0][1]));
   }
 
-  /** Call once per camera frame (lm = 21 [x, y] pairs or null). Returns true if a summon or dissolve fired. */
-  onHand(lm, t) {
+  /** Call once per camera frame (lm = 21 [x, y] pairs or null). Returns true if an action fired. */
+  onHand(lm, t, clapped = false) {
     const raw = classify(lm, this.gestureProfile);
     const [stable, changed] = this.debounce.update(raw);
     this.rawPose = raw;
@@ -80,8 +82,9 @@ export class Controller {
     if (summon) this.pinchStart = false;
     const dissolve = !idle && middlePinchEdge;
     const action = summon || dissolve;
-    this.state.update(stable, changed, action, t);
-    return action;
+    const clapNext = clapped && (this.state.state === SPHERE || this.state.state === FORMED);
+    this.state.update(stable, changed, action, t, clapNext);
+    return action || clapNext;
   }
 
   handVisible(t) { return t - this.lastHandT < 0.35; }

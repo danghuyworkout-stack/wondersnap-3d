@@ -31,7 +31,7 @@ to drive it with the on-screen buttons and keyboard.
 | Layer | What it does |
 |---|---|
 | **Hand tracking** | [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker) tracks up to two hands (21 landmarks each) from the webcam, fully on-device |
-| **Gesture recognition** | Custom classifiers turn landmarks into poses (fist, open, point, pinch, peace), thumb+index and thumb+middle pinch detectors, hand twist/tilt and two-hand zoom, fed through a debouncer and a state machine |
+| **Gesture recognition** | Custom classifiers turn landmarks into poses (fist, open, point, pinch, peace), thumb+index/thumb+middle pinch and two-hand clap detectors, hand twist/tilt and two-hand zoom, fed through a debouncer and a state machine |
 | **Particle engine** | A hand-written WebGL2 renderer. Particle physics runs on the GPU with transform feedback: no Three.js, no game engine, no framework |
 | **Models** | 33 procedural models built from real measurements and sampled into point clouds, with named parts that can explode, glow and be pulled out |
 | **Server** | A zero-dependency Node.js static server (`server.mjs`) |
@@ -49,6 +49,7 @@ Nothing is sent anywhere: the video never leaves your machine.
 | 🔄 **Twist / raise your hand** | Turn and tilt the formed model |
 | ☝️ **Point** | Hold your finger on a part to select it. It glows, and a card explains what it does |
 | 🙌 **Two hands** | Move them apart or together to zoom |
+| 👏 **Clap** | Jump to the next model |
 | ✌️ **Peace** | Jump to the next model |
 
 ## Keyboard and mouse
